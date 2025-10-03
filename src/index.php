@@ -9,7 +9,7 @@ require __DIR__ . '/phpmailer/SMTP.php';
 require 'config.php';
 
 // === Database Connection ===
-$pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass);
+$pdo = new PDO("mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4", $DB_USER, $DB_PASS);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // === Create table if not exists ===
@@ -64,7 +64,7 @@ if ($action === 'subscribe' && !empty($_POST['email'])) {
 
     $confirm_link = "https://newsletter.szabo.jp/?action=confirm&token=$token";
     sendMail(
-        $email_password,
+        $EMAIL_PASSWORD,
         $email,
         "Confirm your subscription to szabo.jp",
         "Thank you for subscribing to updates from <a href='https://szabo.jp/'>szabo.jp</a>.<br>
@@ -149,7 +149,7 @@ if ($action === 'send-digest') {
                 You can unsubscribe at any time by clicking below, which will also delete all of your data:</p>
                 <p><a href='$unsubscribe'>Unsubscribe</a></p>
                 <p>Questions? Contact us at <a href='mailto:newsletter@szabo.jp'>newsletter@szabo.jp</a>.</p>";
-        sendMail($email_password, $s['email'], "New post on szabo.jp: {$new_post['title']}", $msg);
+        sendMail($EMAIL_PASSWORD, $s['email'], "New post on szabo.jp: {$new_post['title']}", $msg);
     }
     echo "Digest sent.";
     exit;
@@ -232,4 +232,3 @@ if ($action === 'send-digest') {
   </footer>
 </body>
 </html>
-

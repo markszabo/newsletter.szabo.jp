@@ -1,0 +1,40 @@
+on: push
+name: Deploy website on push
+jobs:
+  web-deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get latest code
+      uses: actions/checkout@v5
+    
+    - name: Generate config.php
+      run: |
+        cat > src/config.php <<'EOL'
+        <?php
+        $DB_HOST = "${{ secrets.DB_HOST }}";
+        $DB_NAME = "${{ secrets.DB_NAME }}";
+        $DB_USER = "${{ secrets.DB_USER }}";
+        $DB_PASS = "${{ secrets.DB_PASSWORD }}";
+
+        $EMAIL_PASSWORD = "${{ secrets.EMAIL_PASSWORD }}";
+
+        $SEND_DIGEST_KEY_HASH = "${{ secrets.SEND_DIGEST_KEY_HASH }}";
+        ?>
+        EOL
+
+    - name: Sync files
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+      with:
+        server: ftp.hosting.ininet.hu
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASS }}
+        protocol: ftps
+        local-dir: ./src/
+        state-name: ${{ secrets.FTP_STATE_FILE_NAME }}
+        #dry-run: ${{ github.ref != 'refs/heads/main' }}
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **.md
+          config.php.template
