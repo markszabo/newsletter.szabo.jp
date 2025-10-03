@@ -1,2 +1,3 @@
 # newsletter.szabo.jp
-Source of newsletter.szabo.jp
+
+Source of [https://newsletter.szabo.jp](https://newsletter.szabo.jp)

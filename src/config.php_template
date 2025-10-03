@@ -1,0 +1,11 @@
+<?php
+// Database credentials
+$db_host = "";
+$db_name = "";
+$db_user = "";
+$db_pass = "";
+
+$email_password = "";
+
+$SEND_DIGEST_KEY_HASH = "";
+?>
