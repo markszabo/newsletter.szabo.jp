@@ -35,7 +35,7 @@ jobs:
         protocol: ftps
         local-dir: ./src/
         state-name: ${{ secrets.FTP_STATE_FILE_NAME }}
-        #dry-run: ${{ github.ref != 'refs/heads/main' }}
+        dry-run: ${{ github.ref != 'refs/heads/main' }}
         exclude: |
           **/.git*
           **/.git*/**
