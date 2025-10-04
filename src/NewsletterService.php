@@ -34,7 +34,7 @@ class NewsletterService {
 
     public function confirmSubscription($token) {
         $db_result = $this->db->confirmSubscriber($token);
-        if $db_result {
+        if ($db_result) {
             $this->mailer->send("newsletter-dev@szabo.jp", "New confirmed subscriber", "A new subscriber has confirmed their subscription. See details on https://mysql.hosting.ininet.hu/");
         } else {
             $this->mailer->send("newsletter-dev@szabo.jp", "Subscriber confirmation failed", "A new subscriber has failed to confirm their subscription. See details on https://mysql.hosting.ininet.hu/");
