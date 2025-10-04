@@ -53,7 +53,7 @@ class NewsletterService {
         $new_post = null;
         $entry = $feed->entry[0];
         $updated = strtotime((string)$entry->updated);
-        if ($updated > time() - 24*60*60) {
+        if ($updated > time() - 24*60*60*30) { // last post is expected to be within the last 24 hours
             $new_post = [
                 'title' => (string)$entry->title,
                 'link' => (string)$entry->link['href']
