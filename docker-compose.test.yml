@@ -1,0 +1,29 @@
+services:
+  test-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: testpass
+      MYSQL_DATABASE: newsletter_test
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ptestpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /var/lib/mysql
+  
+  php-test:
+    image: php:8.1-cli
+    volumes:
+      - ./:/app
+    working_dir: /app
+    environment:
+      DB_HOST: test-db
+      DB_PORT: 3306
+      DB_NAME: newsletter_test
+      DB_USER: root
+      DB_PASS: testpass
+    depends_on:
+      test-db:
+        condition: service_healthy
+    command: sh -c "docker-php-ext-install pdo pdo_mysql && php tests/e2e_test.php"

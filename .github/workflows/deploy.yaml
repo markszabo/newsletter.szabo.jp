@@ -1,13 +1,16 @@
 on: push
-name: Deploy website
+name: Test and deploy website
 jobs:
   web-deploy:
-    name: Deploy
+    name: Test and deploy
     runs-on: ubuntu-latest
     steps:
     - name: Get latest code
       uses: actions/checkout@v5
     
+    - name: Run E2E Tests with Docker Compose
+      run: make test
+
     - name: Generate config.php
       run: |
         cat > src/config.php <<'EOL'
