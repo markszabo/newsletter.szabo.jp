@@ -64,7 +64,7 @@ class NewsletterE2ETest {
     public function testDigestSending() {
         echo "Running: testDigestSending\n";
         
-        // Set up confirmed subscribers
+        // Step 1: Sign up 3 users
         $email1 = 'subscriber1@example.com';
         $email2 = 'subscriber2@example.com';
         $email3 = 'unconfirmed@example.com';
@@ -73,6 +73,7 @@ class NewsletterE2ETest {
         $this->service->subscribe($email2);
         $this->service->subscribe($email3);
         
+        // Step 2: Confirm 2 of the users (not the third)
         $sub1 = $this->service->getSubscriberByEmail($email1);
         $sub2 = $this->service->getSubscriberByEmail($email2);
         
@@ -80,29 +81,73 @@ class NewsletterE2ETest {
         $this->service->confirmSubscription($sub2['token']);
         // Don't confirm email3
         
+        // Verify confirmation status
+        $confirmedSub1 = $this->service->getSubscriberByEmail($email1);
+        $confirmedSub2 = $this->service->getSubscriberByEmail($email2);
+        $unconfirmedSub3 = $this->service->getSubscriberByEmail($email3);
+        
+        $this->assertEquals(1, $confirmedSub1['confirmed'], "Subscriber 1 should be confirmed");
+        $this->assertEquals(1, $confirmedSub2['confirmed'], "Subscriber 2 should be confirmed");
+        $this->assertEquals(0, $unconfirmedSub3['confirmed'], "Subscriber 3 should NOT be confirmed");
+        
         $this->mailer->clear();
         
-        // Create a mock feed file
-        $feedContent = $this->createMockAtomFeed();
+        // Step 3: Create a mock feed and send first digest
+        $feedContent = $this->createMockAtomFeed('First Post');
         $feedFile = sys_get_temp_dir() . '/test_feed.xml';
         file_put_contents($feedFile, $feedContent);
         
-        // Send digest
         $key = 'test-key-123';
         $keyHash = hash('sha256', $key);
         $result = $this->service->sendDigest("file://$feedFile", $keyHash, $key);
         
-        // Verify digest was sent only to confirmed subscribers
-        $this->assertTrue($result['success'], "Digest should be sent successfully");
+        // Step 4: Verify only 2 users (confirmed ones) received the digest, not the third
+        $this->assertTrue($result['success'], "First digest should be sent successfully");
         $this->assertEquals('digest_sent', $result['message'], "Message should indicate digest was sent");
         $this->assertEquals(2, $result['sent_count'], "Should send to 2 confirmed subscribers");
-        $this->assertEquals(2, $this->mailer->getEmailCount(), "Should send 2 emails");
+        $this->assertEquals(2, $this->mailer->getEmailCount(), "Should send 2 emails for first digest");
         
-        // Verify emails were sent to the right people
         $sentTo = array_map(function($e) { return $e['to']; }, $this->mailer->getSentEmails());
-        $this->assertContains($email1, $sentTo, "Should send to subscriber 1");
-        $this->assertContains($email2, $sentTo, "Should send to subscriber 2");
-        $this->assertNotContains($email3, $sentTo, "Should NOT send to unconfirmed subscriber");
+        $this->assertContains($email1, $sentTo, "First digest: Should send to subscriber 1");
+        $this->assertContains($email2, $sentTo, "First digest: Should send to subscriber 2");
+        $this->assertNotContains($email3, $sentTo, "First digest: Should NOT send to unconfirmed subscriber 3");
+        
+        // Verify email content
+        $emails = $this->mailer->getSentEmails();
+        foreach ($emails as $email) {
+            $this->assertContains('First Post', $email['body'], "Email should contain the post title");
+        }
+        
+        // Step 5: Unsubscribe the second user
+        $this->service->unsubscribe($sub2['token']);
+        
+        // Verify user 2 is deleted
+        $deletedSub2 = $this->service->getSubscriberByEmail($email2);
+        $this->assertFalse($deletedSub2, "Subscriber 2 should be deleted after unsubscribe");
+        
+        $this->mailer->clear();
+        
+        // Step 6: Create a second digest with new content
+        $feedContent2 = $this->createMockAtomFeed('Second Post');
+        file_put_contents($feedFile, $feedContent2);
+        
+        $result2 = $this->service->sendDigest("file://$feedFile", $keyHash, $key);
+        
+        // Step 7: Verify only the first user gets the second digest
+        $this->assertTrue($result2['success'], "Second digest should be sent successfully");
+        $this->assertEquals('digest_sent', $result2['message'], "Second digest should be sent");
+        $this->assertEquals(1, $result2['sent_count'], "Should send to only 1 subscriber now");
+        $this->assertEquals(1, $this->mailer->getEmailCount(), "Should send only 1 email for second digest");
+        
+        $sentTo2 = array_map(function($e) { return $e['to']; }, $this->mailer->getSentEmails());
+        $this->assertContains($email1, $sentTo2, "Second digest: Should send to subscriber 1");
+        $this->assertNotContains($email2, $sentTo2, "Second digest: Should NOT send to unsubscribed subscriber 2");
+        $this->assertNotContains($email3, $sentTo2, "Second digest: Should NOT send to unconfirmed subscriber 3");
+        
+        // Verify second email content
+        $secondEmail = $this->mailer->getLastEmail();
+        $this->assertContains('Second Post', $secondEmail['body'], "Second email should contain the new post title");
+        $this->assertEquals($email1, $secondEmail['to'], "Second email should be sent to subscriber 1");
         
         // Clean up
         unlink($feedFile);
@@ -209,7 +254,7 @@ class NewsletterE2ETest {
         }
     }
     
-    private function createMockAtomFeed() {
+    private function createMockAtomFeed($postTitle = 'New Test Post') {
         $now = date('c');
         return <<<XML
 <?xml version="1.0" encoding="utf-8"?>
@@ -220,11 +265,11 @@ class NewsletterE2ETest {
     <updated>$now</updated>
     <id>https://szabo.jp/</id>
     <entry>
-        <title>New Test Post</title>
+        <title>$postTitle</title>
         <link href="https://szabo.jp/blog/test-post"/>
         <updated>$now</updated>
         <id>https://szabo.jp/blog/test-post</id>
-        <content type="html">Test content</content>
+        <content type="html">Test content for $postTitle</content>
     </entry>
 </feed>
 XML;
