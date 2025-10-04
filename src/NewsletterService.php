@@ -33,11 +33,23 @@ class NewsletterService {
     }
 
     public function confirmSubscription($token) {
-        return $this->db->confirmSubscriber($token);
+        $db_result = $this->db->confirmSubscriber($token);
+        if ($db_result) {
+            $this->mailer->send("newsletter-dev@szabo.jp", "New confirmed subscriber", "A new subscriber has confirmed their subscription. See details on https://mysql.hosting.ininet.hu/");
+        } else {
+            $this->mailer->send("newsletter-dev@szabo.jp", "Subscriber confirmation failed", "A new subscriber has failed to confirm their subscription. See details on https://mysql.hosting.ininet.hu/");
+        }
+        return $db_result;
     }
 
     public function unsubscribe($token) {
-        return $this->db->deleteSubscriber($token);
+        $db_result = $this->db->deleteSubscriber($token);
+        if ($db_result) {
+            $this->mailer->send("newsletter-dev@szabo.jp", "A subscriber unsubscribed", "A subscriber has been unsubscribed. See details on https://mysql.hosting.ininet.hu/");
+        } else {
+            $this->mailer->send("newsletter-dev@szabo.jp", "A subscriber tried to unsubscribe but it failed", "A subscriber has failed to unsubscribe. See details on https://mysql.hosting.ininet.hu/");
+        }
+        return $db_result;
     }
 
     public function sendDigest($feedUrl, $sendDigestKeyHash, $providedKey) {
@@ -53,7 +65,7 @@ class NewsletterService {
         $new_post = null;
         $entry = $feed->entry[0];
         $updated = strtotime((string)$entry->updated);
-        if ($updated > time() - 24*60*60) {
+        if ($updated > time() - 24*60*60) { // last post is expected to be within the last 24 hours
             $new_post = [
                 'title' => (string)$entry->title,
                 'link' => (string)$entry->link['href']
