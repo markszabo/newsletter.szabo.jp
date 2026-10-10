@@ -11,6 +11,7 @@ require __DIR__ . '/Database.php';
 require __DIR__ . '/MailerInterface.php';
 require __DIR__ . '/PHPMailerAdapter.php';
 require __DIR__ . '/NewsletterService.php';
+require __DIR__ . '/Turnstile.php';
 
 // Load configuration
 if (file_exists(__DIR__ . '/config.php')) {
