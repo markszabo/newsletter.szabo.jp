@@ -23,6 +23,8 @@ jobs:
         $EMAIL_PASSWORD = "${{ secrets.EMAIL_PASSWORD }}";
 
         $SEND_DIGEST_KEY_HASH = "${{ secrets.SEND_DIGEST_KEY_HASH }}";
+        
+        $CLOUDFLARE_TURNSTILE_SECRET_KEY = "${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}";
         ?>
         EOL
 

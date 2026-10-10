@@ -72,6 +72,11 @@ function renderPage($title, $content) {
       margin-bottom: 1em;
     }
   </style>
+  <script
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+    async
+    defer
+  ></script>
 </head>
 <body>
   <h1><?= htmlspecialchars($title) ?></h1>
@@ -86,6 +91,16 @@ function renderPage($title, $content) {
 $action = $_GET['action'] ?? '';
 
 if ($action === 'subscribe' && !empty($_POST['email'])) {
+    // Turnstile verification
+    $turnstile_token = $_POST['cf-turnstile-response'] ?? '';
+    $remoteip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'];
+
+    $validation = validateTurnstile($turnstile_token, $CLOUDFLARE_TURNSTILE_SECRET_KEY, $remoteip);
+    if (!$validation['success']) {
+      http_response_code(403);
+      die("Turnstile verification failed. Try again, and reach out to me if it keeps happening.");
+    }
+
     $service->subscribe($_POST['email']);
     
     $content = <<<HTML
@@ -172,6 +187,7 @@ $content = <<<HTML
 <p>Get notified about new posts on <a href="https://szabo.jp/">szabo.jp</a>.</p>
 <form method="post" action="?action=subscribe">
   <input type="email" name="email" placeholder="Your email address" required>
+  <div class="cf-turnstile" data-sitekey="0x4AAAAAAFTCt_Eu2GDuaqPh"></div>
   <button type="submit">Subscribe</button>
 </form>
 <p class="info">
