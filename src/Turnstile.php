@@ -1,5 +1,5 @@
 <?php
-// Cludlfare Turnstile server side validation
+// Cloudflare Turnstile server side validation using cURL
 // https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
 function validateTurnstile($token, $secret, $remoteip = null) {
     $url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
@@ -13,18 +13,19 @@ function validateTurnstile($token, $secret, $remoteip = null) {
         $data['remoteip'] = $remoteip;
     }
 
-    $options = [
-        'http' => [
-            'header' => "Content-type: application/x-www-form-urlencoded\r\n",
-            'method' => 'POST',
-            'content' => http_build_query($data)
-        ]
-    ];
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // 10-second timeout to prevent hanging
 
-    $context = stream_context_create($options);
-    $response = file_get_contents($url, false, $context);
+    $response = curl_exec($ch);
+    $curlError = curl_error($ch);
+    curl_close($ch);
 
-    if ($response === FALSE) {
+    // If cURL itself failed to connect, return an internal error structure
+    if ($response === false) {
+        error_log("Turnstile cURL connection failed: " . $curlError);
         return ['success' => false, 'error-codes' => ['internal-error']];
     }
 
